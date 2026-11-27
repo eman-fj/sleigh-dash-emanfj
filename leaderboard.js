@@ -5,9 +5,10 @@
 (function () {
   'use strict';
 
-  var API = '/api/scores';
-  var STORAGE_KEY = 'game.name';
-  var TIMEOUT_MS  = 5000;
+  var API          = '/api/scores';
+  var STORAGE_KEY  = 'game.name';
+  var UID_KEY      = 'game.uid';
+  var TIMEOUT_MS   = 5000;
 
   /* ── helpers ──────────────────────────────────────────────────────────────── */
 
@@ -21,6 +22,21 @@
 
   function saveName(n) {
     try { localStorage.setItem(STORAGE_KEY, n); } catch { /* ignore */ }
+  }
+
+  function getUid() {
+    try {
+      var id = localStorage.getItem(UID_KEY);
+      if (!id) {
+        // crypto.randomUUID is available in all modern browsers
+        id = (crypto.randomUUID ? crypto.randomUUID()
+          : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c){
+              return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
+            }));
+        localStorage.setItem(UID_KEY, id);
+      }
+      return id;
+    } catch { return 'anonymous'; }
   }
 
   function fetchWithTimeout(url, opts) {
@@ -83,6 +99,8 @@
     nickInput.addEventListener('input', function () {
       saveName(nickInput.value.trim());
     });
+    // Ensure a UID is generated the moment the player focuses the nickname field
+    nickInput.addEventListener('focus', function () { getUid(); }, { once: true });
 
     // ── Hall of Fame panel ────────────────────────────────────────────────────
     var hofWrap = document.createElement('div');
@@ -143,7 +161,7 @@
     fetchWithTimeout(API, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ name: name, score: score, seconds: seconds }),
+      body:    JSON.stringify({ name: name, uid: getUid(), score: score, seconds: seconds }),
     })
       .then(function (res) { return res.json(); })
       .then(function (data) {

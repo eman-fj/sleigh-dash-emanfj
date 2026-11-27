@@ -26,11 +26,16 @@ async function redisPipeline(url, token, commands) {
 }
 
 function parseTop(zrangeResult) {
-  // ZRANGE ... WITHSCORES returns [name, score, name, score, ...]
+  // ZRANGE ... WITHSCORES returns [member, score, member, score, ...]
+  // member format is "DisplayName:uid" — strip the uid suffix for display
   const flat = zrangeResult ?? [];
   const top  = [];
   for (let i = 0; i < flat.length; i += 2) {
-    top.push({ name: String(flat[i]), score: Number(flat[i + 1]) });
+    const member = String(flat[i]);
+    // Find the last colon to split off the uid portion
+    const sep  = member.lastIndexOf(':');
+    const name = sep > 0 ? member.slice(0, sep) : member;
+    top.push({ name, score: Number(flat[i + 1]) });
   }
   return top;
 }
@@ -55,6 +60,15 @@ function validateName(raw) {
     if (lower.includes(word.toLowerCase())) return null;
   }
   return name;
+}
+
+function validateUid(raw) {
+  if (typeof raw !== 'string') return null;
+  const uid = raw.trim();
+  // Accept standard UUID v4 format or the 'anonymous' fallback
+  if (uid === 'anonymous') return uid;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uid)) return null;
+  return uid.toLowerCase();
 }
 
 export default {
@@ -98,6 +112,14 @@ export default {
         return json({ ok: false, error: 'invalid name' }, 400);
       }
 
+      const uid = validateUid(body.uid);
+      if (!uid) {
+        return json({ ok: false, error: 'invalid uid' }, 400);
+      }
+
+      // The Redis member is "DisplayName:uid" — name shown to users, uid enforces uniqueness
+      const member = `${name}:${uid}`;
+
       const score   = Number(body.score);
       const seconds = Number(body.seconds);
 
@@ -113,8 +135,8 @@ export default {
 
       // Save best score and read back rank + top 10 in one pipeline
       const pipeline = await redisPipeline(url, token, [
-        ['ZADD', LEADERBOARD_KEY, 'GT', score, name],
-        ['ZREVRANK', LEADERBOARD_KEY, name],
+        ['ZADD', LEADERBOARD_KEY, 'GT', score, member],
+        ['ZREVRANK', LEADERBOARD_KEY, member],
         ['ZRANGE', LEADERBOARD_KEY, 0, 9, 'REV', 'WITHSCORES'],
       ]);
       const rank = (pipeline[1]?.result ?? 0) + 1;

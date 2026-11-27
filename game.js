@@ -70,6 +70,16 @@ const TEXT = {
   postcardFile:     "sleigh-catch-postcard.png",
 };
 
+// ── CONFETTI ──────────────────────────────────────────────────────────────────
+function fireConfetti(opts) {
+  if (!window.confetti) return;
+  var defaults = {
+    colors: ['#c0392b', '#f5c518', '#27ae60'],
+    disableForReducedMotion: true,
+  };
+  window.confetti(Object.assign({}, defaults, opts));
+}
+
 // ── BEST SCORE (localStorage) ─────────────────────────────────────────────────
 function loadBest() {
   try { return parseInt(localStorage.getItem("game.best"), 10) || 0; }
@@ -866,6 +876,10 @@ function applyStreak() {
   if (newMult > comboMult) {
     comboMult = newMult;
     showComboBanner("COMBO x" + comboMult + "!");
+    if (comboMult >= 5) {
+      // Mid-screen burst for big combos
+      fireConfetti({ particleCount: 60, spread: 70, origin: { y: 0.45 } });
+    }
   }
 }
 
@@ -919,6 +933,10 @@ function updateHUD() {
     hudReindeer.style.display = "none";
   }
   if (score !== _lastDisplayedScore) {
+    // Fire a small burst when a new level is reached
+    if (getLevel() > Math.floor(_lastDisplayedScore / 10)) {
+      fireConfetti({ particleCount: 35, spread: 55, origin: { y: 0.3 }, scalar: 0.8 });
+    }
     _lastDisplayedScore = score;
     hudScore.textContent = TEXT.score + " " + score;
     // Score pop: scale up briefly then snap back
@@ -1175,7 +1193,15 @@ function endGame() {
   const prev  = loadBest();
   const isNew = score > prev;
   const best  = isNew ? score : prev;
-  if (isNew) saveBest(best);
+  if (isNew) {
+    saveBest(best);
+    // Two-wave confetti burst for new best score
+    fireConfetti({ particleCount: 100, spread: 80, origin: { y: 0.55 } });
+    setTimeout(function () {
+      fireConfetti({ particleCount: 60, spread: 100, origin: { y: 0.45 }, angle: 60 });
+      fireConfetti({ particleCount: 60, spread: 100, origin: { y: 0.45 }, angle: 120 });
+    }, 300);
+  }
 
   postcardScore = score;
 
@@ -1194,6 +1220,13 @@ function endGame() {
     );
   }
 }
+
+// Called by leaderboard.js after a successful score submission
+window.onLeaderboardRank = function (rank) {
+  if (rank <= 10) {
+    fireConfetti({ particleCount: 80, spread: 90, origin: { y: 0.5 } });
+  }
+};
 
 replayBtn.addEventListener("click", startGame);
 

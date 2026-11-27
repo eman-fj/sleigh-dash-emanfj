@@ -177,6 +177,9 @@
           }
           return;
         }
+        if (data.rank && typeof window.onLeaderboardRank === 'function') {
+          window.onLeaderboardRank(data.rank);
+        }
         var rankLine = data.rank
           ? '<p class="lb-rank">🏅 You ranked <strong>#' + data.rank + '</strong>!</p>'
           : '';

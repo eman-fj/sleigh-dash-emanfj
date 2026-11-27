@@ -168,7 +168,13 @@
       .then(function (res) { return res.json(); })
       .then(function (data) {
         if (!data.ok) {
-          resultDiv.innerHTML = '<p class="lb-offline">Score not saved: ' + escHtml(data.error || 'error') + '</p>';
+          if (data.code === 'NAME_TAKEN') {
+            resultDiv.innerHTML =
+              '<p class="lb-offline">❌ <strong>' + escHtml(name) + '</strong> is already taken.'
+              + ' Change your nickname on the start screen and play again.</p>';
+          } else {
+            resultDiv.innerHTML = '<p class="lb-offline">Score not saved: ' + escHtml(data.error || 'error') + '</p>';
+          }
           return;
         }
         var rankLine = data.rank

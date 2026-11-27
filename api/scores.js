@@ -4,7 +4,8 @@
 
 const BLOCKED_WORDS = [];
 
-const LEADERBOARD_KEY = 'leaderboard';
+const LEADERBOARD_KEY  = 'leaderboard';
+const NAME_REGISTRY    = 'name-registry';  // hash: lowercaseName → uid
 
 function getEnv() {
   const url   = process.env.KV_REST_API_URL   || process.env.UPSTASH_REDIS_REST_URL;
@@ -118,7 +119,20 @@ export default {
       }
 
       // The Redis member is "DisplayName:uid" — name shown to users, uid enforces uniqueness
-      const member = `${name}:${uid}`;
+      const member   = `${name}:${uid}`;
+      const nameKey  = name.toLowerCase();
+
+      // ── Name uniqueness check ──────────────────────────────────────────────
+      // Look up who currently owns this name (case-insensitive)
+      const registryCheck = await redisPipeline(url, token, [
+        ['HGET', NAME_REGISTRY, nameKey],
+      ]);
+      const ownerUid = registryCheck[0]?.result ?? null;
+
+      if (ownerUid !== null && ownerUid !== uid) {
+        // Name is registered to a different player
+        return json({ ok: false, error: 'name taken', code: 'NAME_TAKEN' }, 409);
+      }
 
       const score   = Number(body.score);
       const seconds = Number(body.seconds);
@@ -133,14 +147,15 @@ export default {
         return json({ ok: false, error: 'score too high for time played' }, 400);
       }
 
-      // Save best score and read back rank + top 10 in one pipeline
+      // Claim/confirm name ownership + save score + read back rank + top 10
       const pipeline = await redisPipeline(url, token, [
+        ['HSET', NAME_REGISTRY, nameKey, uid],
         ['ZADD', LEADERBOARD_KEY, 'GT', score, member],
         ['ZREVRANK', LEADERBOARD_KEY, member],
         ['ZRANGE', LEADERBOARD_KEY, 0, 9, 'REV', 'WITHSCORES'],
       ]);
-      const rank = (pipeline[1]?.result ?? 0) + 1;
-      const top  = parseTop(pipeline[2]?.result ?? []);
+      const rank = (pipeline[2]?.result ?? 0) + 1;
+      const top  = parseTop(pipeline[3]?.result ?? []);
 
       return json({ ok: true, rank, top });
     }

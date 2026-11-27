@@ -465,6 +465,7 @@ function drawSky() {
 // ── GAME STATE ────────────────────────────────────────────────────────────────
 let running = false;
 let score, lives, invTimer, blinkPhase;
+let roundTime = 0;   // seconds elapsed in the current round
 let streak, comboMult;   // consecutive good catches and current multiplier
 let reindeer;            // 0–4 reindeer running ahead of the sleigh
 let items;               // array of falling items
@@ -1066,6 +1067,8 @@ function loop(ts) {
   updateSnow(dt);     // snow falls on start screen, during play, and at game over
 
   if (running) {
+    roundTime += dt;
+
     // Dash cooldown countdown
     if (dashCooldown > 0) dashCooldown = Math.max(0, dashCooldown - dt);
 
@@ -1139,6 +1142,7 @@ function endGame() {
   goScore.textContent   = TEXT.finalScore + " " + score;
   goBest.textContent    = TEXT.bestScore  + " " + best;
   goNewBest.classList.toggle("hidden", !isNew);
+  window.Leaderboard?.submit(score, Math.max(3, Math.round(roundTime)));
   gameoverScreen.classList.remove("hidden");
   playGameOver();
 
@@ -1279,6 +1283,7 @@ function startGame() {
   targetX    = heroX;
   score      = 0;
   lives      = CONFIG.lives;
+  roundTime  = 0;
   invTimer   = 0;
   blinkPhase = 0;
   streak       = 0;
@@ -1404,6 +1409,7 @@ function playGameOver() {
 resize();
 generateStars();
 requestAnimationFrame(loop);
+window.Leaderboard?.init();
 
 // ── GSAP ENTRANCE ANIMATIONS (start screen) ───────────────────────────────────
 // Runs once after the page loads. All wrapped in window.gsap guards.

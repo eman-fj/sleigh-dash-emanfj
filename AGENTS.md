@@ -11,15 +11,16 @@ Vercel serves it from the `main` branch on GitHub.
 The human's choices (name, hero, items, style) are in `specs/my-game.md`.
 
 ## Hard rules
-1. Files: `index.html`, `styles.css`, `game.js`, `README.md`, `specs/my-game.md`, and `api/scores.js` (leaderboard only). Do not add other files unless the human asks.
+1. Files: `index.html`, `styles.css`, `game.js`, `README.md`, `specs/my-game.md`, plus `leaderboard.js` (leaderboard screens) and `api/scores.js` (leaderboard server). Do not add other files unless the human asks.
 2. No npm packages, no build step, no image files, no audio files. Use only the **approved libraries** below, from the exact URLs given. Sound is the Web Audio API.
-3. Load scripts as classic scripts with `defer`, in this order: libraries first, `game.js` last. Do not use ES modules in the browser. The game must work when the human double-clicks `index.html` (file://).
+3. Load scripts as classic scripts with `defer`, in this order: libraries, then `leaderboard.js`, then `game.js` last. Do not use ES modules in the browser. The game must work when the human double-clicks `index.html` (file://).
 4. Put every tunable number in the `CONFIG` object at the top of `game.js`. Put every UI string in the `TEXT` object.
 5. Never run a command that does not exit (no web servers, no `vercel dev`, no watch modes). The human tests in the browser.
 6. Run `git`, `gh` or `vercel` only when the human asks.
 7. Secrets live only in Vercel environment variables. Read them with `process.env` inside `api/` files. Never put a token or a URL with a token in `index.html`, `game.js`, `README.md` or a commit message.
 8. No tracking scripts. The only personal data is a nickname that the player types. Show the player that the nickname is public.
 9. Make the smallest change that does the job. Do not rewrite or reformat code that the request does not touch. Keep the existing gameplay unless the human asks to change it.
+10. **Big files:** `game.js` gets long. Do not read it from top to bottom. Search for the function or name you need (for example `endGame`), then read only that part (150 lines or fewer at a time).
 
 ## Approved libraries (optional; add one only when a request needs it)
 | Library | Use it for | Tag |
@@ -80,7 +81,7 @@ const CONFIG = {
   - Reject the score if it is more than `seconds × 60 + 50`.
   - Rate limit: `SET rl:<ip> 1 NX EX 10` (IP from `x-forwarded-for`). If it returns null, send status 429.
   - Keep each name's best score only: `ZADD leaderboard GT score name`. Rank = `ZREVRANK` + 1.
-- **In the browser:**
+- **In the browser:** all leaderboard code lives in `leaderboard.js` as `window.Leaderboard` with `init()` and `submit(score, seconds)`. `game.js` only calls `window.Leaderboard?.init()` and `window.Leaderboard?.submit(...)`.
   - Ask for a nickname once. Store it as `game.name` and let the player change it. Show "Your nickname is public. Do not use your full name."
   - At game over, POST the score (only if > 0). Show the rank and the top 10 on the game-over screen. Show the top 10 on the start screen.
   - Use a 5-second timeout (`AbortController`). If the fetch fails or the page runs from file://, show "The online leaderboard works on your live site", keep the local best score, and never block play.
@@ -102,7 +103,7 @@ Do not write code in Plan mode. Do not repeat the engine rules in the spec.
 ## After each build request (Agent mode)
 1. Find the matching task in `specs/my-game.md`. If there is none, add a line under "Extras".
 2. Make the change.
-3. Run `node --check game.js` (and `node --check api/scores.js` if it exists). Fix every error.
+3. Run `node --check` on every `.js` file you changed. Fix every error.
 4. Read your diff once against the "Done when" list in the request.
 5. Tick the box: `- [x]`.
 6. Reply: what you built (up to 3 lines), then "Try this:" with 2 to 4 checks.

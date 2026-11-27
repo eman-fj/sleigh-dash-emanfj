@@ -297,3 +297,106 @@ html, body {
 }
 #mute-btn:hover  { background: rgba(255,255,255,0.22); }
 #mute-btn:active { background: rgba(255,255,255,0.08); }
+
+/* ── Leaderboard ──────────────────────────────────────────── */
+#lb-nick-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+.lb-label {
+  font-size: clamp(0.85rem, 2.5vw, 1rem);
+  color: #e8e8ff;
+  letter-spacing: 0.03em;
+}
+
+.lb-nick-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.5rem 1rem;
+  font-size: clamp(1rem, 3vw, 1.2rem);
+  color: #0d1b4b;
+  background: #fff;
+  border: 2px solid #f5c518;
+  border-radius: 2rem;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.lb-nick-input:focus {
+  border-color: #fff;
+  box-shadow: 0 0 0 3px #f5c51866;
+}
+
+.lb-privacy {
+  font-size: clamp(0.7rem, 2vw, 0.82rem);
+  color: rgba(232, 232, 255, 0.65);
+  text-align: center;
+}
+
+#lb-hof {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lb-heading {
+  font-size: clamp(1rem, 3.5vw, 1.4rem);
+  color: #f5c518;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(0.85rem, 2.5vw, 1rem);
+  color: #e8e8ff;
+}
+
+.lb-table td {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.lb-table td:first-child { width: 2.2rem; text-align: center; }
+.lb-name { text-align: left; }
+.lb-pts  { text-align: right; font-weight: 700; color: #f5c518; }
+
+.lb-mine {
+  background: rgba(245, 197, 24, 0.18);
+  border-radius: 0.4rem;
+}
+.lb-mine td { color: #fff; }
+.lb-mine .lb-pts { color: #f5c518; }
+
+.lb-loading, .lb-empty, .lb-offline {
+  font-size: clamp(0.82rem, 2.5vw, 0.95rem);
+  color: rgba(232, 232, 255, 0.60);
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+#lb-go-result {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lb-rank {
+  font-size: clamp(1rem, 3.5vw, 1.3rem);
+  color: #f5c518;
+  text-align: center;
+  font-weight: 700;
+}
+.lb-rank strong { font-size: 1.15em; }

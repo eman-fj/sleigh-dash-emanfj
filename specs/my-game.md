@@ -45,6 +45,9 @@ Steer a sleigh along the bottom of the screen and catch falling gifts and cookie
     - [x] A **Play Again** button (or pressing Space / Enter) restarts immediately.
 
 - [-] **Task 5 — Christmas magic:** *(in progress)*
+  - [x] Leaderboard step 1: `api/scores.js` created (GET top 10, POST with all checks).
+  - [x] Leaderboard step 2: `leaderboard.js` created — nickname field + Hall of Fame on start screen, rank + top 10 on game-over screen.
+  - [x] Leaderboard step 3: `game.js` wired — `Leaderboard.init()` at boot, `Leaderboard.submit(score, seconds)` in `endGame()`, `roundTime` tracks seconds played.
 
 ## Extras
 - Postcard: "Make a postcard" button on game-over screen downloads a 900×630 PNG with the game name, hero 🛷 (or face photo), score, rank (if available), and "God jul!".

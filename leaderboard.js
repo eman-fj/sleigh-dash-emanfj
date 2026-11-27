@@ -82,6 +82,8 @@
   function init() {
     var startScreen = document.getElementById('start-screen');
     if (!startScreen) return;
+    // Guard: don't inject elements twice
+    if (document.getElementById('lb-nick-wrap')) return;
 
     // ── nickname row ──────────────────────────────────────────────────────────
     var nickWrap = document.createElement('div');
@@ -184,11 +186,4 @@
   /* ── expose ───────────────────────────────────────────────────────────────── */
 
   window.Leaderboard = { init: init, submit: submit };
-
-  // Auto-init once the DOM is ready (game.js does not call init itself)
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
 }());

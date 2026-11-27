@@ -39,7 +39,7 @@ const CONFIG = {
   maxReindeer:     4,
   reindeerBonus:   0.08, // extra catch-radius fraction per reindeer
   reindeerBannerTime: 1.6,
-  powerWeight: 0.04,     // ~1-in-25 of all spawns
+  powerWeight: 0.10,     // ~1-in-10 of all spawns (5 power-ups share this)
   magnetDuration:  5,
   cocoDuration:    5,
   starDuration:    5,    // seconds double-points lasts

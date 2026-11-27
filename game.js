@@ -42,7 +42,9 @@ const CONFIG = {
   powerWeight: 0.04,     // ~1-in-25 of all spawns
   magnetDuration:  5,
   cocoDuration:    5,
+  starDuration:    5,    // seconds double-points lasts
   cocoSpeedMult:   0.5,  // half speed during hot cocoa
+  maxLives:        5,    // cap for extra-life power-up
   magnetRadius:    0.5,  // fraction of screen width
   magnetForce:     4,    // ease factor toward hero
   // northern lights
@@ -109,9 +111,11 @@ const ITEMS = [
   { key: "icicle",  emoji: "🧊", kind: "bad",   points: 0, weight: null, speedMult: 1.8, movement: "fast",     minScore: 20 },
   { key: "snowball",emoji: "❄️", kind: "bad",   points: 0, weight: null, speedMult: 1,   movement: "zigzag",   minScore: 40 },
   { key: "cracker", emoji: "💣", kind: "bad",   points: 0, weight: null, speedMult: 1,   movement: "split",    minScore: 60 },
-  { key: "magnet",  emoji: "🧲", kind: "power", points: 0, weight: null, speedMult: 1,   movement: "straight", minScore: 0  },
-  { key: "shield",  emoji: "🛡️", kind: "power", points: 0, weight: null, speedMult: 1,   movement: "straight", minScore: 0  },
-  { key: "coco",    emoji: "☕", kind: "power", points: 0, weight: null, speedMult: 1,   movement: "straight", minScore: 0  },
+  { key: "magnet",    emoji: "🧲", kind: "power", points: 0, weight: null, speedMult: 1, movement: "straight", minScore: 0  },
+  { key: "shield",    emoji: "🛡️", kind: "power", points: 0, weight: null, speedMult: 1, movement: "straight", minScore: 0  },
+  { key: "coco",      emoji: "☕", kind: "power", points: 0, weight: null, speedMult: 1, movement: "straight", minScore: 0  },
+  { key: "star",      emoji: "🌟", kind: "power", points: 0, weight: null, speedMult: 1, movement: "straight", minScore: 0  },
+  { key: "extralife", emoji: "❤️", kind: "power", points: 0, weight: null, speedMult: 1, movement: "straight", minScore: 0  },
 ];
 
 // ── EMOJI CACHE ───────────────────────────────────────────────────────────────
@@ -654,13 +658,22 @@ function spawnItem() {
   const eligibleBad = ITEMS.filter(function(t) { return t.kind === "bad" && score >= t.minScore; });
   const badShare    = eligibleBad.length > 0 ? bw / eligibleBad.length : 0;
 
+  // Count eligible power-ups (extralife only appears when lives < 3)
+  const eligiblePower = ITEMS.filter(function(t) {
+    if (t.kind !== "power") return false;
+    if (t.key === "extralife" && lives >= 3) return false;
+    return true;
+  });
+  const powerShare = eligiblePower.length > 0 ? pw / eligiblePower.length : 0;
+
   const pool = [];
   for (const t of ITEMS) {
     if (t.kind === "bad") {
       if (score < t.minScore) continue;  // not unlocked yet
       pool.push({ type: t, w: badShare });
     } else if (t.kind === "power") {
-      pool.push({ type: t, w: pw / 3 });  // equal share among 3 power-ups
+      if (t.key === "extralife" && lives >= 3) continue;  // only when hurt
+      pool.push({ type: t, w: powerShare });
     } else {
       pool.push({ type: t, w: gw * t.weight });
     }
@@ -698,6 +711,11 @@ function activatePower(key) {
     effects.shield = { timeLeft: Infinity, duration: Infinity };
   } else if (key === "coco") {
     effects.coco = { timeLeft: CONFIG.cocoDuration, duration: CONFIG.cocoDuration };
+  } else if (key === "star") {
+    effects.star = { timeLeft: CONFIG.starDuration, duration: CONFIG.starDuration };
+  } else if (key === "extralife") {
+    lives = Math.min(lives + 1, CONFIG.maxLives);
+    updateHUD();
   }
   updatePowerHUD();
 }
@@ -759,7 +777,8 @@ function checkCollisions() {
       } else if (item.type.kind === "power") {
         activatePower(item.type.key);
       } else {
-        score += item.type.points * comboMult;
+        const pts = item.type.points * comboMult * (effects.star ? 2 : 1);
+        score += pts;
         playBlip();
         checkReindeer();
         applyStreak();
@@ -917,8 +936,8 @@ const powerHud = document.getElementById("power-hud");
 
 function updatePowerHUD() {
   powerHud.innerHTML = "";
-  const order = ["magnet", "shield", "coco"];
-  const icons  = { magnet: "🧲", shield: "🛡️", coco: "☕" };
+  const order = ["magnet", "shield", "coco", "star"];
+  const icons  = { magnet: "🧲", shield: "🛡️", coco: "☕", star: "🌟" };
   for (const name of order) {
     if (!effects[name]) continue;
     const ef = effects[name];
@@ -1012,6 +1031,27 @@ function draw() {
       ctx.beginPath();
       ctx.arc(heroX, ringY, ringR, -Math.PI / 2, -Math.PI / 2 + filled * Math.PI * 2);
       ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Star sparkle: rotating golden stars around hero
+  if (effects.star) {
+    const starCount = 5;
+    const orbitR    = hSize * 0.75;
+    const angle     = (Date.now() / 400);  // rotates over time
+    ctx.save();
+    ctx.font      = Math.round(hSize * 0.28) + "px serif";
+    ctx.textAlign    = "center";
+    ctx.textBaseline = "middle";
+    ctx.shadowColor  = "#ffe94e";
+    ctx.shadowBlur   = 12;
+    ctx.globalAlpha = 0.55 + 0.45 * Math.abs(Math.sin(Date.now() / 150));
+    for (let s = 0; s < starCount; s++) {
+      const a = angle + (s / starCount) * Math.PI * 2;
+      const sx = heroX + Math.cos(a) * orbitR;
+      const sy = hy    + Math.sin(a) * orbitR * 0.55;  // slight ellipse
+      ctx.fillText("✦", sx, sy);
     }
     ctx.restore();
   }
